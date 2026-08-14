@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meds - Smart Pharmacy Operations Platform</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Chart.js for Executive Analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="dark-theme">
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- DEDICATED LANDING / AUTHENTICATION INTERFACE (Shown when logged out) -->
+  <div id="authLandingScreen" class="auth-landing-overlay">
+    <div class="auth-landing-card glass-panel">
+      <div class="auth-landing-brand">
+        <div class="brand-medical-cross">✚</div>
+        <h2>Meds</h2>
+        <p>Smart Pharmacy & Warehouse Operations Platform</p>
+      </div>
+
+      <div class="auth-toggle">
+        <button type="button" id="authTabLogin" class="active" onclick="toggleAuthMode('login')">🔑 Sign In</button>
+        <button type="button" id="authTabRegister" onclick="toggleAuthMode('register')">📝 Register Account</button>
+      </div>
+
+      <form id="authForm" onsubmit="handleAuthSubmit(event)">
+        <div id="authErrorMessage" class="auth-error-alert hidden" role="alert">
+          <span class="auth-error-icon">⚠️</span>
+          <span id="authErrorText" class="auth-error-text"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="authUsername">Username *</label>
+          <input type="text" id="authUsername" class="form-control" placeholder="Enter username (e.g., admin)" autocomplete="username">
+        </div>
+
+        <div class="form-group mt-3">
+          <label for="authPassword">Password *</label>
+          <input type="password" id="authPassword" class="form-control" placeholder="Enter password" autocomplete="current-password">
+        </div>
+
+        <div id="authOutletGroup" class="form-group mt-3 hidden">
+          <label for="authOutletSelect">Select Store / Outlet *</label>
+          <select id="authOutletSelect" class="form-control">
+            <option value="all">All Outlets (Global Access)</option>
+          </select>
+        </div>
+
+        <div id="authRoleGroup" class="form-group mt-3 hidden">
+          <label for="authRole">Assign User Role *</label>
+          <select id="authRole" class="form-control">
+            <option value="pharmacist">Pharmacist (Store Billing & Sales)</option>
+            <option value="admin">Admin (Full Operations Access)</option>
+            <option value="warehouse">Warehouse Manager (Batches & Inventory)</option>
+            <option value="finance">Finance Manager (Reports & Analytics)</option>
+          </select>
+        </div>
+
+        <button type="submit" id="authSubmitBtn" class="btn btn-primary btn-block mt-4 btn-lg">
+          🚀 Enter Meds Operations Portal
+        </button>
+      </form>
+
+      <div class="auth-footer-note">
+        <span>🔒 Secure 256-Bit Encrypted JWT Enterprise Gateway</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN APPLICATION PORTAL (Shown when authenticated) -->
+  <div id="mainAppWrapper" class="main-app-wrapper hidden">
+    
+    <!-- Top Header Navigation -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="brand">
+          <div class="brand-icon">✚</div>
+          <div class="brand-text">
+            <h1>Meds</h1>
+            <span>Pharmacy & Warehouse Operations</span>
+          </div>
+        </div>
+        <div class="outlet-selector-wrapper">
+          <label for="currentOutletSelect">Active Outlet:</label>
+          <select id="currentOutletSelect" class="outlet-select" onchange="refreshAllData()">
+            <option value="">No Outlets Available</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <div id="systemStatusBadge" class="status-badge connected">
+          <span class="status-dot"></span>
+          <span id="systemStatusText">API Online</span>
+        </div>
+
+        <div id="userProfileArea" class="user-profile">
+          <div class="avatar" id="userAvatar">A</div>
+          <div class="user-info">
+            <span class="user-name" id="userNameDisplay">User</span>
+            <span class="user-role-badge" id="userRoleDisplay">admin</span>
+          </div>
+          <button id="logoutBtn" class="btn btn-icon" title="Logout">🚪 Sign Out</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="app-layout">
+      <!-- Sidebar Navigation -->
+      <aside class="sidebar">
+        <nav class="nav-menu">
+          <button class="nav-item active" data-tab="dashboard">
+            <span class="nav-icon">📊</span> Operations Dashboard
+          </button>
+          <button class="nav-item" data-tab="pos">
+            <span class="nav-icon">🧾</span> POS Billing Counter
+          </button>
+          <button class="nav-item" data-tab="inventory">
+            <span class="nav-icon">💊</span> Medicines & Stock
+          </button>
+          <button class="nav-item" data-tab="outlets">
+            <span class="nav-icon">🏪</span> Outlets & Customers
+          </button>
+          <button class="nav-item" data-tab="reports">
+            <span class="nav-icon">📈</span> Executive Reports
+          </button>
+          <button class="nav-item" data-tab="ai-hub">
+            <span class="nav-icon">🤖</span> Meds AI Operations Hub
+          </button>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="quick-stats-mini">
+            <div class="stat-mini">
+              <span class="stat-lbl">System Engine</span>
+              <span class="stat-val">Flask Microservice</span>
+            </div>
+            <div class="stat-mini">
+              <span class="stat-lbl">Database</span>
+              <span class="stat-val">PostgreSQL / SQLite</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Content Area -->
+      <main class="main-content">
+
+        <!-- TAB 1: DASHBOARD OVERVIEW -->
+        <section id="tab-dashboard" class="tab-pane active">
+          <div class="page-header">
+            <h2>Meds Operations Dashboard</h2>
+            <p>Live financial performance, stock health, and transactions monitor.</p>
+          </div>
+
+          <!-- Metric KPI Cards -->
+          <div class="kpi-grid">
+            <div class="kpi-card glass-panel glow-cyan">
+              <div class="kpi-icon">💰</div>
+              <div class="kpi-data">
+                <span class="kpi-title">Total Revenue</span>
+                <span class="kpi-value" id="kpiRevenue">₹0.00</span>
+                <span class="kpi-sub text-success">Real-time Accumulation</span>
+              </div>
+            </div>
+
+            <div class="kpi-card glass-panel glow-emerald">
+              <div class="kpi-icon">📈</div>
+              <div class="kpi-data">
+                <span class="kpi-title">Net Estimated Profit</span>
+                <span class="kpi-value" id="kpiProfit">₹0.00</span>
+                <span class="kpi-sub text-success">Margin After Cost Price</span>
+              </div>
+            </div>
+
+            <div class="kpi-card glass-panel glow-indigo">
+              <div class="kpi-icon">🧾</div>
+              <div class="kpi-data">
+                <span class="kpi-title">Total Sales Count</span>
+                <span class="kpi-value" id="kpiSalesCount">0</span>
+                <span class="kpi-sub">Completed Transactions</span>
+              </div>
+            </div>
+
+            <div class="kpi-card glass-panel glow-amber">
+              <div class="kpi-icon">💊</div>
+              <div class="kpi-data">
+                <span class="kpi-title">Registered Medicines</span>
+                <span class="kpi-value" id="kpiMedicinesCount">0</span>
+                <span class="kpi-sub">Active Catalog Items</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dashboard Charts & Summaries Grid -->
+          <div class="dashboard-grid mt-6">
+            <div class="glass-panel card flex-2">
+              <div class="card-header">
+                <h3>Revenue & Profit Performance</h3>
+                <span class="badge badge-primary">Live Data</span>
+              </div>
+              <div class="chart-container">
+                <canvas id="dashboardRevenueChart"></canvas>
+              </div>
+            </div>
+
+            <div class="glass-panel card flex-1">
+              <div class="card-header">
+                <h3>Fast Moving Medicines</h3>
+                <span class="badge badge-success">Top Performers</span>
+              </div>
+              <div id="fastMovingList" class="data-list-mini">
+                <p class="text-muted p-3">No sales recorded yet.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- AI Replenishment Alert Banner -->
+          <div class="glass-panel card mt-6 border-amber">
+            <div class="card-header">
+              <h3>⚡ AI Low-Stock & Replenishment Alerts</h3>
+              <button class="btn btn-secondary btn-sm" onclick="switchTab('ai-hub')">View All AI Insights →</button>
+            </div>
+            <div id="dashboardReplenishmentAlerts" class="table-responsive">
+              <p class="text-success p-3">✅ All stock levels are clear!</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 2: POS BILLING COUNTER -->
+        <section id="tab-pos" class="tab-pane">
+          <div class="page-header">
+            <h2>Point of Sale (POS) Billing Counter</h2>
+            <p>Process medicine checkout, execute automatic batch FIFO deduction, and generate tax invoices.</p>
+          </div>
+
+          <div class="pos-container">
+            <!-- Left: Selection & Cart Form -->
+            <div class="glass-panel pos-form-panel">
+              <h3>New Transaction</h3>
+              
+              <div id="posAllOutletsWarning" class="alert alert-warning mb-3 hidden" style="background: rgba(245, 158, 11, 0.15); border: 1px solid #f59e0b; border-radius: 8px; padding: 12px; color: #fbbf24; font-size: 0.9rem;">
+                ⚠️ <strong>Billing Disabled:</strong> "All Outlets (Global View)" is selected. Admin can browse combined stock across all stores, but billing requires selecting a specific store from the active outlet header dropdown.
+              </div>
+
+              <form id="posSaleForm" onsubmit="handlePOSSubmit(event)">
+                <div class="form-group">
+                  <label for="posCustomer">Customer (Optional)</label>
+                  <select id="posCustomer" class="form-control">
+                    <option value="">Walk-in Customer</option>
+                  </select>
+                </div>
+
+                <div class="form-group mt-3">
+                  <label for="posMedicine">Select Medicine *</label>
+                  <select id="posMedicine" class="form-control" required onchange="updatePOSPriceInfo()">
+                    <option value="">-- Choose Medicine --</option>
+                  </select>
+                </div>
+
+                <div class="pos-item-preview glass-card mt-3" id="posItemPreview">
+                  <div class="preview-row">
+                    <span>Unit Price:</span>
+                    <strong id="posUnitPrice">₹0.00</strong>
+                  </div>
+                  <div class="preview-row">
+                    <span>Cost Price:</span>
+                    <span id="posCostPrice">₹0.00</span>
+                  </div>
+                  <div class="preview-row">
+                    <span>Available Stock:</span>
+                    <strong id="posAvailableStock" class="text-info">0 units</strong>
+                  </div>
+                  <div id="posStoreBreakdown" class="mt-3 text-muted fs-sm" style="border-top:1px dashed rgba(255,255,255,0.15); padding-top:8px; display:none;"></div>
+                </div>
+
+                <div class="form-group mt-4">
+                  <label for="posQuantity">Quantity to Sell *</label>
+                  <input type="number" id="posQuantity" class="form-control" min="1" value="1" required oninput="updatePOSTotal()">
+                </div>
+
+                <div class="pos-summary-box glass-card mt-4">
+                  <div class="summary-line">
+                    <span>Subtotal:</span>
+                    <span id="posSubtotal">₹0.00</span>
+                  </div>
+                  <div class="summary-line highlight">
+                    <span>Grand Total:</span>
+                    <strong id="posGrandTotal" class="text-primary-glow">₹0.00</strong>
+                  </div>
+                </div>
+
+                <button type="submit" id="posSubmitBtn" class="btn btn-success btn-block mt-4 btn-lg">
+                  ✅ Complete Checkout & Print Invoice
+                </button>
+              </form>
+            </div>
+
+            <!-- Right: Recent Sales & Invoices -->
+            <div class="glass-panel pos-history-panel">
+              <h3>Recent Billing Invoices</h3>
+              <div id="recentSalesTable" class="table-responsive">
+                <p class="text-muted p-4 text-center">No sales completed yet.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 3: INVENTORY & BATCHES -->
+        <section id="tab-inventory" class="tab-pane">
+          <div class="page-header flex-between">
+            <div>
+              <h2>Medicines & Stock Batches</h2>
+              <p>Manage pharmaceutical catalog, stock intake, and expiry tracking.</p>
+            </div>
+            <div class="action-buttons">
+              <button class="btn btn-primary" onclick="openModal('addMedicineModal')">➕ Add New Medicine</button>
+              <button class="btn btn-secondary" onclick="openModal('addBatchModal')">📦 Receive Stock Batch</button>
+            </div>
+          </div>
+
+          <div class="tab-sub-nav">
+            <button class="sub-tab-btn active" onclick="showSubTab('inventory-meds', this)">Medicine Catalog</button>
+            <button class="sub-tab-btn" onclick="showSubTab('inventory-batches', this)">Batches & Expiries</button>
+          </div>
+
+          <div id="subtab-inventory-meds" class="subtab-pane active">
+            <div class="glass-panel table-panel">
+              <div class="table-actions">
+                <input type="text" id="medicineSearchInput" class="form-control search-input" placeholder="🔍 Search medicine name, category..." onkeyup="filterMedicinesTable()">
+              </div>
+              <div id="medicinesTableWrapper" class="table-responsive">
+                <p class="text-muted p-4 text-center">No medicines added yet.</p>
+              </div>
+            </div>
+          </div>
+
+          <div id="subtab-inventory-batches" class="subtab-pane">
+            <div class="glass-panel table-panel">
+              <div class="table-actions">
+                <input type="text" id="batchSearchInput" class="form-control search-input" placeholder="🔍 Search batch number, medicine..." onkeyup="filterBatchesTable()">
+              </div>
+              <div id="batchesTableWrapper" class="table-responsive">
+                <p class="text-muted p-4 text-center">No batches received yet.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 4: OUTLETS & CUSTOMERS -->
+        <section id="tab-outlets" class="tab-pane">
+          <div class="page-header flex-between">
+            <div>
+              <h2>Outlets & Customers</h2>
+              <p>Manage pharmacy outlets, central warehouses, and registered customers.</p>
+            </div>
+            <div class="action-buttons">
+              <button class="btn btn-primary" onclick="openModal('addOutletModal')">🏪 Add New Outlet</button>
+              <button class="btn btn-secondary" onclick="openModal('addCustomerModal')">👤 Add Customer</button>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="glass-panel">
+              <h3>Outlets Network</h3>
+              <div id="outletsList" class="outlet-cards-container">
+                <p class="text-muted p-3">No outlets created yet.</p>
+              </div>
+            </div>
+
+            <div class="glass-panel">
+              <h3>Customer Directory</h3>
+              <div id="customersTableWrapper" class="table-responsive">
+                <p class="text-muted p-4 text-center">No customers registered yet.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 5: EXECUTIVE REPORTS -->
+        <section id="tab-reports" class="tab-pane">
+          <div class="page-header">
+            <h2>Executive Business Reports</h2>
+            <p>Financial breakdowns, outlet performance metrics, and top sales.</p>
+          </div>
+
+          <div class="grid-2">
+            <div class="glass-panel card">
+              <h3>Outlet Revenue Performance</h3>
+              <div class="chart-container">
+                <canvas id="outletPerformanceChart"></canvas>
+              </div>
+            </div>
+
+            <div class="glass-panel card">
+              <h3>Top 5 Best Selling Medicines</h3>
+              <div class="chart-container">
+                <canvas id="topMedicinesChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Store-by-Store Profit & Loss Table -->
+          <div class="glass-panel card mt-6">
+            <div class="card-header flex-between">
+              <h3>🏬 Store-by-Store Profit & Loss (P&L) Analytics</h3>
+              <span class="badge badge-cyan">Owner Overview</span>
+            </div>
+            <div id="storePnLTableWrapper" class="table-responsive">
+              <p class="text-muted p-4 text-center">Loading store P&L analytics...</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 6: MEDS AI OPERATIONS HUB -->
+        <section id="tab-ai-hub" class="tab-pane">
+          <div class="page-header">
+            <h2>🤖 Meds AI Operations Hub</h2>
+            <p>Demand forecasting, fraud & anomaly detection, and conversational AI assistant.</p>
+          </div>
+
+          <div class="ai-hub-grid">
+            <!-- AI Conversational Assistant -->
+            <div class="glass-panel ai-chat-card flex-2">
+              <div class="card-header">
+                <h3>💬 Meds Conversational AI Assistant</h3>
+                <span class="badge badge-cyan">LLM & Live DB Engine</span>
+              </div>
+              <div class="chat-messages" id="chatMessages">
+                <div class="chat-bubble bot">
+                  Hello! I am your <strong>Meds AI Assistant</strong>. Ask me questions about your revenue, sales count, top medicines, stock levels, or expiring batches!
+                </div>
+              </div>
+              <form id="aiChatForm" class="chat-input-row" onsubmit="handleAIChatSubmit(event)">
+                <input type="text" id="aiQueryInput" class="form-control" placeholder="Ask AI a question about sales, inventory, or profit..." required>
+                <button type="submit" class="btn btn-primary">Send 🚀</button>
+              </form>
+            </div>
+
+            <!-- AI Tools Side Column -->
+            <div class="ai-side-column flex-1">
+              <!-- Demand Prediction Widget -->
+              <div class="glass-panel card">
+                <h3>🔮 Demand Prediction Tool</h3>
+                <div class="form-group mt-2">
+                  <label for="aiPredictMedSelect">Select Medicine</label>
+                  <select id="aiPredictMedSelect" class="form-control"></select>
+                </div>
+                <button class="btn btn-secondary btn-block mt-2" onclick="runAIDemandPrediction()">Predict Demand</button>
+                <div id="aiPredictionResult" class="ai-result-box mt-3">Select a medicine to calculate predicted unit demand.</div>
+              </div>
+
+              <!-- Fraud & Anomaly Detection Widget -->
+              <div class="glass-panel card mt-4">
+                <h3>🚨 Anomaly & Fraud Detection</h3>
+                <p class="text-muted fs-sm">Isolation Forest ML model analyzing transaction log for price/quantity outliers.</p>
+                <button class="btn btn-warning btn-block mt-2" onclick="runAIAnomalyDetection()">Run Anomaly Scan</button>
+                <div id="aiAnomalyResult" class="ai-result-box mt-3">Click to scan sales log for outliers.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Full AI Replenishment Table -->
+          <div class="glass-panel card mt-6">
+            <div class="card-header">
+              <h3>📦 Automated AI Stock Replenishment Recommendations</h3>
+              <button class="btn btn-secondary btn-sm" onclick="loadAIReplenishment()">Refresh Suggestions</button>
+            </div>
+            <div id="aiReplenishmentTable" class="table-responsive">
+              <p class="text-success p-4 text-center">✅ All medicine stock levels are clear!</p>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- ADD MEDICINE MODAL -->
+  <div id="addMedicineModal" class="modal-overlay">
+    <div class="modal-content glass-panel">
+      <div class="modal-header">
+        <h3>💊 Add New Medicine</h3>
+        <button class="modal-close" onclick="closeModal('addMedicineModal')">✕</button>
+      </div>
+      <form onsubmit="handleAddMedicineSubmit(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="medName">Medicine Name *</label>
+            <input type="text" id="medName" class="form-control" placeholder="e.g. Paracetamol 500mg" required>
+          </div>
+          <div class="form-group mt-2">
+            <label for="medDescription">Description</label>
+            <input type="text" id="medDescription" class="form-control" placeholder="e.g. Fever & Pain Relief">
+          </div>
+          <div class="grid-2 mt-2">
+            <div class="form-group">
+              <label for="medPrice">Selling Price (₹) *</label>
+              <input type="number" step="0.01" id="medPrice" class="form-control" required placeholder="50.00">
+            </div>
+            <div class="form-group">
+              <label for="medCostPrice">Cost Price (₹) *</label>
+              <input type="number" step="0.01" id="medCostPrice" class="form-control" required placeholder="30.00">
+            </div>
+          </div>
+          <div class="form-group mt-2">
+            <label for="medCategory">Category *</label>
+            <select id="medCategory" class="form-control" required>
+              <option value="Tablet">Tablet</option>
+              <option value="Capsule">Capsule</option>
+              <option value="Syrup">Syrup</option>
+              <option value="Injection">Injection</option>
+              <option value="Ointment">Ointment</option>
+              <option value="Equipment">Equipment</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('addMedicineModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Medicine</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ADD BATCH MODAL -->
+  <div id="addBatchModal" class="modal-overlay">
+    <div class="modal-content glass-panel">
+      <div class="modal-header">
+        <h3>📦 Receive Stock Batch</h3>
+        <button class="modal-close" onclick="closeModal('addBatchModal')">✕</button>
+      </div>
+      <form onsubmit="handleAddBatchSubmit(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="batchMedicine">Select Medicine *</label>
+            <select id="batchMedicine" class="form-control" required></select>
+          </div>
+          <div class="form-group mt-2">
+            <label for="batchNumber">Batch Number *</label>
+            <input type="text" id="batchNumber" class="form-control" placeholder="e.g. BATCH-2026-X" required>
+          </div>
+          <div class="grid-2 mt-2">
+            <div class="form-group">
+              <label for="batchExpiry">Expiry Date *</label>
+              <input type="date" id="batchExpiry" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label for="batchQuantity">Received Quantity *</label>
+              <input type="number" id="batchQuantity" class="form-control" min="1" required placeholder="100">
+            </div>
+          </div>
+          <div class="form-group mt-2">
+            <label for="batchOutlet">Destination Outlet *</label>
+            <select id="batchOutlet" class="form-control" required></select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('addBatchModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Receive Batch</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ADD OUTLET MODAL -->
+  <div id="addOutletModal" class="modal-overlay">
+    <div class="modal-content glass-panel">
+      <div class="modal-header">
+        <h3>🏪 Add New Outlet</h3>
+        <button class="modal-close" onclick="closeModal('addOutletModal')">✕</button>
+      </div>
+      <form onsubmit="handleAddOutletSubmit(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="outletName">Outlet Name *</label>
+            <input type="text" id="outletName" class="form-control" placeholder="e.g. Meds Retail Branch A" required>
+          </div>
+          <div class="form-group mt-2">
+            <label for="outletLocation">Location / City *</label>
+            <input type="text" id="outletLocation" class="form-control" placeholder="e.g. Hyderabad" required>
+          </div>
+          <div class="form-group mt-2">
+            <label for="outletType">Outlet Type *</label>
+            <select id="outletType" class="form-control" required>
+              <option value="store">Retail Store</option>
+              <option value="warehouse">Central Warehouse</option>
+              <option value="hospital">Hospital Pharmacy</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('addOutletModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Outlet</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ADD CUSTOMER MODAL -->
+  <div id="addCustomerModal" class="modal-overlay">
+    <div class="modal-content glass-panel">
+      <div class="modal-header">
+        <h3>👤 Add Customer Record</h3>
+        <button class="modal-close" onclick="closeModal('addCustomerModal')">✕</button>
+      </div>
+      <form onsubmit="handleAddCustomerSubmit(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="custName">Customer Full Name *</label>
+            <input type="text" id="custName" class="form-control" placeholder="e.g. John Doe" required>
+          </div>
+          <div class="form-group mt-2">
+            <label for="custType">Customer Type *</label>
+            <select id="custType" class="form-control" required>
+              <option value="retail">Retail Patient</option>
+              <option value="wholesale">Wholesale Clinic</option>
+              <option value="insurance">Insurance Partner</option>
+            </select>
+          </div>
+          <div class="form-group mt-2">
+            <label for="custContact">Contact Phone / Email</label>
+            <input type="text" id="custContact" class="form-control" placeholder="+91 9876543210">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('addCustomerModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Customer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- INVOICE PREVIEW MODAL -->
+  <div id="invoiceModal" class="modal-overlay">
+    <div class="modal-content glass-panel invoice-modal">
+      <div class="modal-header">
+        <h3>🧾 Meds Tax Invoice</h3>
+        <button class="modal-close" onclick="closeModal('invoiceModal')">✕</button>
+      </div>
+      <div class="modal-body" id="invoiceModalBody">
+        <!-- Dynamic invoice content rendered here -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('invoiceModal')">Close</button>
+        <button type="button" class="btn btn-primary" onclick="window.print()">🖨️ Print Receipt</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Application Scripts -->
+  <script src="js/demo_data.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
